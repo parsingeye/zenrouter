@@ -3,7 +3,7 @@
 use BadMethodCallException;
 use Gil\ZenRouter\Contracts\ContainerInterface;
 
-class SuperSimpleRouter {
+class Router {
 
     /**
      * Route collection
