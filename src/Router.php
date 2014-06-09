@@ -27,6 +27,11 @@ class Router {
     protected $verbs = ['get', 'post', 'put', 'patch', 'delete', 'options'];
 
     /**
+     * Handles 404
+     */
+    protected $notFoundHandler;
+
+    /**
      * @param ContainerInterface $container
      */
     public function __construct(ContainerInterface $container = null)
@@ -60,6 +65,7 @@ class Router {
     protected function getPath()
     {
         $path = '/';
+
         if (!empty ($_SERVER['PATH_INFO']))
         {
             $path = $_SERVER['PATH_INFO'];
@@ -81,20 +87,39 @@ class Router {
      */
     public function route()
     {
-        $handler = null;
-
         $path = $this->getPath();
 
         $method = strtolower($_SERVER['REQUEST_METHOD']);
 
         if (isset($this->routes[$method][$path]))
         {
-            list($handlerClass, $handlerMethod) = explode('@', $this->routes[$method][$path]);
+            $action = $this->routes[$method][$path];
 
-            return $this->callAction($handlerClass, $handlerMethod);
+            // check if action is function or closure
+            if (is_callable($action))
+            {
+                return call_user_func($action);
+            }
+            else
+            {
+                $actionArray = explode('@', $this->routes[$method][$path]);
+
+                if ($actionArray[0] and $actionArray[1])
+                {
+                    return $this->callControllerAction($actionArray[0], $actionArray[1]);
+                }
+            }
         }
 
         $this->handle404();
+    }
+
+    /**
+     * @param $handler
+     */
+    public function notFound($handler)
+    {
+        $this->notFoundHandler = $handler;
     }
 
     /**
@@ -103,41 +128,38 @@ class Router {
      */
     public function handle404()
     {
-        /* Call '404' route if it exists */
-        if (isset ($this->routes['get']['404']))
+        header($_SERVER["SERVER_PROTOCOL"] . " 404 Not Found");
+
+        if (isset ($this->notFoundHandler) and is_callable($this->notFoundHandler))
         {
-            call_user_func($this->routes['get']['404']);
-        }
-        else
-        {
-            header($_SERVER["SERVER_PROTOCOL"] . " 404 Not Found");
+            return call_user_func($this->notFoundHandler);
         }
 
         die('404 Not Found');
     }
 
     /**
-     * @param $handlerClass
-     * @param $handlerMethod
+     * @param $actionClass
+     * @param $actionMethod
      * @return mixed
-     * @throws BadMethodCallException
+     * @throws \BadMethodCallException
      */
-    public function callAction($handlerClass, $handlerMethod)
+    public function callControllerAction($actionClass, $actionMethod)
     {
-        if (class_exists($handlerClass))
+        if (class_exists($actionClass))
         {
             if ($this->container)
             {
-                $handlerInstance = $this->container->get($handlerClass);
+                $actionInstance = $this->container->get($actionClass);
             }
             else
             {
-                $handlerInstance = new $handlerClass;
+                $actionInstance = new $actionClass;
             }
 
-            return call_user_func([$handlerInstance, $handlerMethod]);
+            return call_user_func([$actionInstance, $actionMethod]);
         }
 
-        throw new BadMethodCallException(sprintf('Class or function %s not found', $handlerClass));
+        throw new BadMethodCallException(sprintf('Class or function %s not found', $actionClass));
     }
 }
