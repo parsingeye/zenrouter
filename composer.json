@@ -1,0 +1,19 @@
+{
+    "name": "gil/zenrouter",
+    "license": "MIT",
+    "require": {
+        "php": ">=5.4"
+    },
+    "authors": [
+        {
+            "name": "Dragan Stefanov",
+            "email": "dragan.stefanov@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Gil\\ZenRouter": "src/"
+        }
+    },
+    "minimum-stability": "dev"
+}
