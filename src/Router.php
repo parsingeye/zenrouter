@@ -65,20 +65,14 @@ class Router {
     protected function getPath()
     {
         $path = '/';
-
-        if (!empty ($_SERVER['PATH_INFO']))
+        if (!empty($_SERVER['PATH_INFO']))
         {
             $path = $_SERVER['PATH_INFO'];
         }
-        else if (!empty ($_SERVER['REQUEST_URI']))
+        else if (!empty($_SERVER['REQUEST_URI']))
         {
-            $path = (strpos($_SERVER['REQUEST_URI'], '?') > 0) ? strstr(
-                $_SERVER['REQUEST_URI'],
-                '?',
-                true
-            ) : $_SERVER['REQUEST_URI'];
+            $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
         }
-
         return $path;
     }
 
@@ -128,13 +122,15 @@ class Router {
      */
     public function handle404()
     {
-        header($_SERVER["SERVER_PROTOCOL"] . " 404 Not Found");
-
-        if (isset ($this->notFoundHandler) and is_callable($this->notFoundHandler))
+        /* Call '404' route if it exists */
+        if (isset($this->routes['get']['404']))
         {
-            return call_user_func($this->notFoundHandler);
+            call_user_func($this->routes['get']['404']);
         }
-
+        else
+        {
+            http_response_code(404);
+        }
         die('404 Not Found');
     }
 
